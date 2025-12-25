@@ -1,9 +1,11 @@
 package com.example.helloworld
 
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.DisplayMetrics
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
@@ -20,20 +22,20 @@ class MainActivity : AppCompatActivity() {
     private lateinit var gameGrid: GridLayout
     private lateinit var btnStart: Button
 
-    private val buttons = arrayOfNulls<Button>(16)
-    private var numbers = IntArray(16) { it } // 0-15
+    private val buttons = arrayOfNulls<TextView>(16) // 改用 TextView 替代 Button，更容易控制样式
+    private var numbers = IntArray(16) { it }
     private var emptyIndex = 15
     private var stepCount = 0
     
-    // 计时器相关变量
+    // 计时器
     private var seconds = 0
     private var isPlaying = false
     private val handler = Handler(Looper.getMainLooper())
     private val timerRunnable = object : Runnable {
         override fun run() {
             seconds++
-            tvTime.text = "时间: ${seconds}s"
-            handler.postDelayed(this, 1000) // 每隔1秒再次执行
+            tvTime.text = "${seconds}s"
+            handler.postDelayed(this, 1000)
         }
     }
 
@@ -46,33 +48,51 @@ class MainActivity : AppCompatActivity() {
         gameGrid = findViewById(R.id.gameGrid)
         btnStart = findViewById(R.id.btnStart)
 
-        setupGrid()
-        resetBoardOrder() // 初始显示整齐的序列
+        // 关键步骤：计算屏幕宽度，动态设置格子大小
+        val displayMetrics = resources.displayMetrics
+        val screenWidth = displayMetrics.widthPixels
+        // 减去左右 padding (40dp) 和 格子间距，除以4
+        val padding = (40 * displayMetrics.density).toInt()
+        val spacing = (4 * 8 * displayMetrics.density).toInt() // 间隙预留
+        val tileSize = (screenWidth - padding - spacing) / 4
 
-        btnStart.setOnClickListener {
-            startGame()
-        }
+        setupGrid(tileSize)
+        resetBoardOrder() 
+
+        btnStart.setOnClickListener { startGame() }
     }
 
-    private fun setupGrid() {
+    private fun setupGrid(size: Int) {
+        gameGrid.removeAllViews()
         for (i in 0 until 16) {
-            val btn = Button(this).apply {
-                textSize = 24f
+            // 使用 TextView 制作格子，因为它可以更灵活地设置圆角背景
+            val tile = TextView(this).apply {
+                textSize = 28f
                 setTextColor(Color.WHITE)
                 gravity = Gravity.CENTER
+                paint.isFakeBoldText = true // 字体加粗
+                
                 layoutParams = GridLayout.LayoutParams().apply {
-                    width = 180
-                    height = 180
-                    setMargins(8, 8, 8, 8)
+                    width = size
+                    height = size
+                    setMargins(8, 8, 8, 8) // 格子之间的间距
                 }
                 setOnClickListener { onTileClick(i) }
             }
-            buttons[i] = btn
-            gameGrid.addView(btn)
+            buttons[i] = tile
+            gameGrid.addView(tile)
         }
     }
 
-    // 仅重置显示，不开始游戏
+    // 辅助函数：用代码画圆角背景
+    private fun getRoundedBackground(colorHex: String): GradientDrawable {
+        return GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = 30f // 圆角半径
+            setColor(Color.parseColor(colorHex))
+        }
+    }
+
     private fun resetBoardOrder() {
         numbers = IntArray(16) { (it + 1) % 16 }
         emptyIndex = 15
@@ -80,16 +100,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startGame() {
-        // 1. 重置数据
         stopTimer()
         seconds = 0
         stepCount = 0
         isPlaying = true
-        isWon = false
-        tvTime.text = "时间: 0s"
-        btnStart.text = "重新开始"
+        tvTime.text = "0s"
+        tvSteps.text = "0"
+        btnStart.text = "重置游戏"
+        btnStart.setBackgroundColor(Color.parseColor("#d63031")) // 红色警告色
 
-        // 2. 洗牌 (确保有解)
         resetBoardOrder()
         var lastMove = -1
         repeat(500) {
@@ -102,8 +121,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
         updateUI()
-
-        // 3. 启动计时器
         handler.post(timerRunnable)
     }
 
@@ -112,9 +129,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onTileClick(index: Int) {
-        // 如果游戏没开始，或者已经赢了，点击无效
-        if (!isPlaying || isWon) return
-
+        if (!isPlaying) return
         if (isAdjacent(index, emptyIndex)) {
             swap(index, emptyIndex)
             emptyIndex = index
@@ -147,39 +162,45 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateUI() {
-        tvSteps.text = "步数: $stepCount"
+        tvSteps.text = "$stepCount"
         for (i in 0 until 16) {
             val num = numbers[i]
-            val btn = buttons[i]!!
+            val tile = buttons[i]!!
             
             if (num == 0) {
-                btn.visibility = View.INVISIBLE
+                tile.visibility = View.INVISIBLE
             } else {
-                btn.visibility = View.VISIBLE
-                btn.text = num.toString()
-                // 没开始时是灰色，开始后是绿色/紫色
-                val color = if (!isPlaying) Color.GRAY else if (num == i + 1) Color.parseColor("#4CAF50") else Color.parseColor("#6200EE")
-                btn.setBackgroundColor(color)
+                tile.visibility = View.VISIBLE
+                tile.text = num.toString()
+                
+                // 动态设置颜色和圆角
+                if (!isPlaying) {
+                    // 未开始：灰色
+                    tile.background = getRoundedBackground("#B2BEC3")
+                } else if (num == i + 1) {
+                    // 归位：绿色
+                    tile.background = getRoundedBackground("#00b894")
+                } else {
+                    // 未归位：漂亮的蓝色
+                    tile.background = getRoundedBackground("#0984E3")
+                }
             }
         }
     }
-
-    private var isWon = false
 
     private fun checkWin() {
         for (i in 0 until 15) {
             if (numbers[i] != i + 1) return
         }
-        // 胜利逻辑
-        isWon = true
         isPlaying = false
-        stopTimer() // 停止计时
+        stopTimer()
+        btnStart.text = "开始挑战"
+        btnStart.setBackgroundColor(Color.parseColor("#0984E3")) // 变回蓝色
         
         AlertDialog.Builder(this)
-            .setTitle("🎉 挑战成功！")
+            .setTitle("🏆 挑战成功！")
             .setMessage("耗时: ${seconds}秒\n步数: $stepCount")
-            .setPositiveButton("再来一局") { _, _ -> startGame() }
-            .setCancelable(false)
+            .setPositiveButton("棒极了") { _, _ -> }
             .show()
     }
 }
