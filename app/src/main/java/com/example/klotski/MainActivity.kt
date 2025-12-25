@@ -1,4 +1,4 @@
-package com.example.helloworld
+package com.example.klotski
 
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
