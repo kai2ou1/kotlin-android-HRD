@@ -12,18 +12,16 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="40dp"
         android:layout_marginBottom="20dp"
-        android:text="数字华容道"
+        android:text="Klotski"
         android:textColor="#2D3436"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:letterSpacing="0.1"/>
+        android:textSize="32sp"
+        android:textStyle="bold" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#FFFFFF"
         android:elevation="4dp"
-        android:orientation="horizontal"
         android:gravity="center"
         android:padding="16dp"
         android:layout_marginBottom="30dp">
@@ -31,42 +29,21 @@
         <LinearLayout
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:layout_height="wrap_content"
             android:gravity="center"
             android:orientation="vertical">
-            <TextView
-                android:text="步数"
-                android:textSize="14sp"
-                android:textColor="#636E72"/>
-            <TextView
-                android:id="@+id/tvSteps"
-                android:text="0"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:textColor="#2D3436"/>
+            <TextView android:text="STEPS" android:textSize="12sp" android:textColor="#636E72"/>
+            <TextView android:id="@+id/tvSteps" android:text="0" android:textSize="24sp" android:textStyle="bold" android:textColor="#2D3436"/>
         </LinearLayout>
 
-        <View
-            android:layout_width="1dp"
-            android:layout_height="40dp"
-            android:background="#DFE6E9"/>
+        <View android:layout_width="1dp" android:layout_height="30dp" android:background="#DFE6E9"/>
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:layout_height="wrap_content"
             android:gravity="center"
             android:orientation="vertical">
-            <TextView
-                android:text="时间"
-                android:textSize="14sp"
-                android:textColor="#636E72"/>
-            <TextView
-                android:id="@+id/tvTime"
-                android:text="0s"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:textColor="#E91E63"/>
+            <TextView android:text="TIME" android:textSize="12sp" android:textColor="#636E72"/>
+            <TextView android:id="@+id/tvTime" android:text="0s" android:textSize="24sp" android:textStyle="bold" android:textColor="#E91E63"/>
         </LinearLayout>
     </LinearLayout>
 
@@ -80,12 +57,9 @@
             android:id="@+id/gameGrid"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
             android:columnCount="4"
             android:rowCount="4"
-            android:alignmentMode="alignMargins"
-            android:useDefaultMargins="false">
-            </GridLayout>
+            android:alignmentMode="alignMargins"/>
     </FrameLayout>
 
     <Button
@@ -94,11 +68,9 @@
         android:layout_height="60dp"
         android:layout_marginBottom="30dp"
         android:backgroundTint="#0984E3"
-        android:text="开始挑战"
-        android:textSize="18sp"
-        android:textStyle="bold"
+        android:text="START GAME"
         android:textColor="#FFF"
-        android:elevation="8dp"
-        android:stateListAnimator="@null"/>
+        android:textSize="18sp"
+        android:textStyle="bold"/>
 
 </LinearLayout>
