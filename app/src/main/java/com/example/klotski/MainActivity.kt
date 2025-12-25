@@ -1,10 +1,11 @@
-package com.example.klotski
+package com.example.klotski  // <--- 1. 这一行必须和你的文件夹路径完全一致！如果不一致请修改！
 
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.DisplayMetrics
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
@@ -13,6 +14,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import kotlin.math.abs
+import kotlin.random.Random
 
 class MainActivity : AppCompatActivity() {
 
@@ -21,14 +23,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var gameGrid: GridLayout
     private lateinit var btnStart: Button
 
-    // 注意：这里改成了 TextView 数组，如果旧代码是 Button 会导致类型错误引发闪退
     private val buttons = arrayOfNulls<TextView>(16)
     private var numbers = IntArray(16) { it }
     private var emptyIndex = 15
     private var stepCount = 0
-    
     private var seconds = 0
     private var isPlaying = false
+
     private val handler = Handler(Looper.getMainLooper())
     private val timerRunnable = object : Runnable {
         override fun run() {
@@ -42,18 +43,25 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 绑定视图，如果 XML 里没有对应的 ID，这里就会崩溃
-        tvSteps = findViewById(R.id.tvSteps)
-        tvTime = findViewById(R.id.tvTime)
-        gameGrid = findViewById(R.id.gameGrid)
-        btnStart = findViewById(R.id.btnStart)
+        // 2. 绑定 ID，必须和 XML 对应
+        try {
+            tvSteps = findViewById(R.id.tvSteps)
+            tvTime = findViewById(R.id.tvTime)
+            gameGrid = findViewById(R.id.gameGrid)
+            btnStart = findViewById(R.id.btnStart)
+        } catch (e: Exception) {
+            // 如果这里报错，说明 XML 没更新成功
+            e.printStackTrace()
+            return
+        }
 
-        // 计算屏幕宽度来设置格子大小
+        // 3. 安全计算屏幕宽度
         val displayMetrics = resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
-        val padding = (40 * displayMetrics.density).toInt()
-        val spacing = (8 * 4 * displayMetrics.density).toInt() // 估算间距
-        val tileSize = (screenWidth - padding - spacing) / 4
+        val density = displayMetrics.density
+        // 预留左右边距和格子间距
+        val availableWidth = screenWidth - (40 * density).toInt() - (32 * density).toInt()
+        val tileSize = availableWidth / 4
 
         setupGrid(tileSize)
         resetBoardOrder()
@@ -72,7 +80,7 @@ class MainActivity : AppCompatActivity() {
                 layoutParams = GridLayout.LayoutParams().apply {
                     width = size
                     height = size
-                    setMargins(8, 8, 8, 8)
+                    setMargins(8, 8, 8, 8) // 像素单位
                 }
                 setOnClickListener { onTileClick(i) }
             }
