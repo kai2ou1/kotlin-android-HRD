@@ -2,54 +2,64 @@ package com.example.helloworld
 
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
 import android.widget.GridLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import kotlin.math.abs
-import kotlin.random.Random
 
 class MainActivity : AppCompatActivity() {
 
-    // 延迟初始化 UI 组件
     private lateinit var tvSteps: TextView
+    private lateinit var tvTime: TextView
     private lateinit var gameGrid: GridLayout
-    private lateinit var btnReset: Button
+    private lateinit var btnStart: Button
 
-    // 游戏数据
     private val buttons = arrayOfNulls<Button>(16)
-    private var numbers = IntArray(16) { it } // 初始化 0-15
+    private var numbers = IntArray(16) { it } // 0-15
     private var emptyIndex = 15
     private var stepCount = 0
-    private var isWon = false
+    
+    // 计时器相关变量
+    private var seconds = 0
+    private var isPlaying = false
+    private val handler = Handler(Looper.getMainLooper())
+    private val timerRunnable = object : Runnable {
+        override fun run() {
+            seconds++
+            tvTime.text = "时间: ${seconds}s"
+            handler.postDelayed(this, 1000) // 每隔1秒再次执行
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 绑定 UI
         tvSteps = findViewById(R.id.tvSteps)
+        tvTime = findViewById(R.id.tvTime)
         gameGrid = findViewById(R.id.gameGrid)
-        btnReset = findViewById(R.id.btnReset)
+        btnStart = findViewById(R.id.btnStart)
 
-        setupGrid() // 初始化格子
-        startNewGame() // 开始游戏
+        setupGrid()
+        resetBoardOrder() // 初始显示整齐的序列
 
-        btnReset.setOnClickListener { startNewGame() }
+        btnStart.setOnClickListener {
+            startGame()
+        }
     }
 
     private fun setupGrid() {
-        // 动态生成 16 个按钮
         for (i in 0 until 16) {
             val btn = Button(this).apply {
                 textSize = 24f
                 setTextColor(Color.WHITE)
                 gravity = Gravity.CENTER
-                // 设置格子大小 (像素，简单粗暴)
                 layoutParams = GridLayout.LayoutParams().apply {
                     width = 180
                     height = 180
@@ -62,14 +72,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun startNewGame() {
-        // 重置数据
-        numbers = IntArray(16) { (it + 1) % 16 } // 1..15, 0
+    // 仅重置显示，不开始游戏
+    private fun resetBoardOrder() {
+        numbers = IntArray(16) { (it + 1) % 16 }
         emptyIndex = 15
+        updateUI()
+    }
+
+    private fun startGame() {
+        // 1. 重置数据
+        stopTimer()
+        seconds = 0
         stepCount = 0
+        isPlaying = true
         isWon = false
-        
-        // 随机打乱 (模拟移动确保有解)
+        tvTime.text = "时间: 0s"
+        btnStart.text = "重新开始"
+
+        // 2. 洗牌 (确保有解)
+        resetBoardOrder()
         var lastMove = -1
         repeat(500) {
             val neighbors = getNeighbors(emptyIndex).filter { it != lastMove }
@@ -81,12 +102,19 @@ class MainActivity : AppCompatActivity() {
             }
         }
         updateUI()
+
+        // 3. 启动计时器
+        handler.post(timerRunnable)
+    }
+
+    private fun stopTimer() {
+        handler.removeCallbacks(timerRunnable)
     }
 
     private fun onTileClick(index: Int) {
-        if (isWon) return
+        // 如果游戏没开始，或者已经赢了，点击无效
+        if (!isPlaying || isWon) return
 
-        // 判断是否相邻
         if (isAdjacent(index, emptyIndex)) {
             swap(index, emptyIndex)
             emptyIndex = index
@@ -119,32 +147,38 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateUI() {
-        tvSteps.text = "Steps: $stepCount"
+        tvSteps.text = "步数: $stepCount"
         for (i in 0 until 16) {
             val num = numbers[i]
             val btn = buttons[i]!!
             
             if (num == 0) {
-                btn.visibility = View.INVISIBLE // 空白格不可见
+                btn.visibility = View.INVISIBLE
             } else {
                 btn.visibility = View.VISIBLE
                 btn.text = num.toString()
-                // 根据是否归位显示不同颜色 (Kotlin 的 when 语法很优雅)
-                val color = if (num == i + 1) Color.parseColor("#4CAF50") else Color.parseColor("#6200EE")
+                // 没开始时是灰色，开始后是绿色/紫色
+                val color = if (!isPlaying) Color.GRAY else if (num == i + 1) Color.parseColor("#4CAF50") else Color.parseColor("#6200EE")
                 btn.setBackgroundColor(color)
             }
         }
     }
 
+    private var isWon = false
+
     private fun checkWin() {
         for (i in 0 until 15) {
             if (numbers[i] != i + 1) return
         }
+        // 胜利逻辑
         isWon = true
+        isPlaying = false
+        stopTimer() // 停止计时
+        
         AlertDialog.Builder(this)
-            .setTitle("You Win! 🎉")
-            .setMessage("Total steps: $stepCount")
-            .setPositiveButton("Play Again") { _, _ -> startNewGame() }
+            .setTitle("🎉 挑战成功！")
+            .setMessage("耗时: ${seconds}秒\n步数: $stepCount")
+            .setPositiveButton("再来一局") { _, _ -> startGame() }
             .setCancelable(false)
             .show()
     }
