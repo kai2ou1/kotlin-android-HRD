@@ -1,0 +1,32 @@
+name: Build Kotlin APK
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 赋予 Gradle 执行权限 (关键)
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 编译 Debug 包
+      - name: Build with Gradle
+        run: ./gradlew assembleDebug
+
+      # 上传 APK
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: kotlin-huarong-road
+          path: app/build/outputs/apk/debug/app-debug.apk
