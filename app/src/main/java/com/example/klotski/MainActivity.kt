@@ -5,7 +5,6 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.DisplayMetrics
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
@@ -22,12 +21,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var gameGrid: GridLayout
     private lateinit var btnStart: Button
 
-    private val buttons = arrayOfNulls<TextView>(16) // 改用 TextView 替代 Button，更容易控制样式
+    // 注意：这里改成了 TextView 数组，如果旧代码是 Button 会导致类型错误引发闪退
+    private val buttons = arrayOfNulls<TextView>(16)
     private var numbers = IntArray(16) { it }
     private var emptyIndex = 15
     private var stepCount = 0
     
-    // 计时器
     private var seconds = 0
     private var isPlaying = false
     private val handler = Handler(Looper.getMainLooper())
@@ -43,21 +42,21 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // 绑定视图，如果 XML 里没有对应的 ID，这里就会崩溃
         tvSteps = findViewById(R.id.tvSteps)
         tvTime = findViewById(R.id.tvTime)
         gameGrid = findViewById(R.id.gameGrid)
         btnStart = findViewById(R.id.btnStart)
 
-        // 关键步骤：计算屏幕宽度，动态设置格子大小
+        // 计算屏幕宽度来设置格子大小
         val displayMetrics = resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels
-        // 减去左右 padding (40dp) 和 格子间距，除以4
         val padding = (40 * displayMetrics.density).toInt()
-        val spacing = (4 * 8 * displayMetrics.density).toInt() // 间隙预留
+        val spacing = (8 * 4 * displayMetrics.density).toInt() // 估算间距
         val tileSize = (screenWidth - padding - spacing) / 4
 
         setupGrid(tileSize)
-        resetBoardOrder() 
+        resetBoardOrder()
 
         btnStart.setOnClickListener { startGame() }
     }
@@ -65,17 +64,15 @@ class MainActivity : AppCompatActivity() {
     private fun setupGrid(size: Int) {
         gameGrid.removeAllViews()
         for (i in 0 until 16) {
-            // 使用 TextView 制作格子，因为它可以更灵活地设置圆角背景
             val tile = TextView(this).apply {
-                textSize = 28f
+                textSize = 24f
                 setTextColor(Color.WHITE)
                 gravity = Gravity.CENTER
-                paint.isFakeBoldText = true // 字体加粗
-                
+                paint.isFakeBoldText = true
                 layoutParams = GridLayout.LayoutParams().apply {
                     width = size
                     height = size
-                    setMargins(8, 8, 8, 8) // 格子之间的间距
+                    setMargins(8, 8, 8, 8)
                 }
                 setOnClickListener { onTileClick(i) }
             }
@@ -84,11 +81,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // 辅助函数：用代码画圆角背景
     private fun getRoundedBackground(colorHex: String): GradientDrawable {
         return GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
-            cornerRadius = 30f // 圆角半径
+            cornerRadius = 24f
             setColor(Color.parseColor(colorHex))
         }
     }
@@ -106,8 +102,8 @@ class MainActivity : AppCompatActivity() {
         isPlaying = true
         tvTime.text = "0s"
         tvSteps.text = "0"
-        btnStart.text = "重置游戏"
-        btnStart.setBackgroundColor(Color.parseColor("#d63031")) // 红色警告色
+        btnStart.text = "RESTART"
+        btnStart.setBackgroundColor(Color.parseColor("#d63031"))
 
         resetBoardOrder()
         var lastMove = -1
@@ -172,16 +168,11 @@ class MainActivity : AppCompatActivity() {
             } else {
                 tile.visibility = View.VISIBLE
                 tile.text = num.toString()
-                
-                // 动态设置颜色和圆角
                 if (!isPlaying) {
-                    // 未开始：灰色
                     tile.background = getRoundedBackground("#B2BEC3")
                 } else if (num == i + 1) {
-                    // 归位：绿色
                     tile.background = getRoundedBackground("#00b894")
                 } else {
-                    // 未归位：漂亮的蓝色
                     tile.background = getRoundedBackground("#0984E3")
                 }
             }
@@ -194,13 +185,12 @@ class MainActivity : AppCompatActivity() {
         }
         isPlaying = false
         stopTimer()
-        btnStart.text = "开始挑战"
-        btnStart.setBackgroundColor(Color.parseColor("#0984E3")) // 变回蓝色
-        
+        btnStart.text = "START GAME"
+        btnStart.setBackgroundColor(Color.parseColor("#0984E3"))
         AlertDialog.Builder(this)
-            .setTitle("🏆 挑战成功！")
-            .setMessage("耗时: ${seconds}秒\n步数: $stepCount")
-            .setPositiveButton("棒极了") { _, _ -> }
+            .setTitle("You Win!")
+            .setMessage("Steps: $stepCount\nTime: ${seconds}s")
+            .setPositiveButton("OK", null)
             .show()
     }
 }
