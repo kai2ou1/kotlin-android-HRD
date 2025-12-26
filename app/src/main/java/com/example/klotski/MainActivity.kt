@@ -1,5 +1,6 @@
 package com.example.klotski  // <--- 1. 这一行必须和你的文件夹路径完全一致！如果不一致请修改！
 
+import com.example.klotski.R  // <--- 强制引入自己的资源文件！
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
